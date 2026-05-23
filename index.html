@@ -140,7 +140,7 @@
 
       .settings-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr 110px 64px;
+        grid-template-columns: 1fr 1fr 110px 72px 82px;
         gap: 10px;
       }
 
@@ -248,6 +248,20 @@
         font-weight: 750;
       }
 
+      .example-text {
+        margin-top: 16px;
+        overflow-wrap: anywhere;
+        color: var(--text);
+        font-size: clamp(16px, 4.5vw, 22px);
+        line-height: 1.35;
+        font-weight: 650;
+      }
+
+      .example-highlight {
+        color: var(--brand-dark);
+        font-weight: 850;
+      }
+
       .empty-state {
         color: var(--muted);
         font-size: 16px;
@@ -307,6 +321,23 @@
         min-height: 48px;
         border-radius: 8px;
         font-size: 17px;
+      }
+
+      .exclude-button {
+        display: none;
+        min-height: 48px;
+        border-color: var(--danger);
+        background: var(--danger);
+        color: #fff;
+        font-size: 17px;
+      }
+
+      .word-actions.remind-actions {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+
+      .word-actions.remind-actions .exclude-button {
+        display: block;
       }
 
       .dict-button {
@@ -392,7 +423,13 @@
           font-size: clamp(18px, 5vw, 28px);
         }
 
+        .example-text {
+          margin-top: 10px;
+          font-size: clamp(14px, 4vw, 18px);
+        }
+
         .done-button,
+        .exclude-button,
         .dict-button {
           min-height: 44px;
           font-size: 16px;
@@ -413,15 +450,15 @@
       <section id="settingsPanel" class="settings-panel" aria-label="설정">
         <label class="field">
           <span>Apps Script Web App URL</span>
-          <input id="apiUrlInput" type="url" placeholder="https://script.google.com/macros/s/AKfycbzybETnwmh_A6G0xIabCgaL6ltzElCXehJ7VGGGRicOFlBG7_n8srF5CSGne3ugG9ebgQ/exec" autocomplete="off">
+          <input id="apiUrlInput" type="url" placeholder="https://script.google.com/macros/s/AKfycbzbajqE12fk0gkrrhhdsT9MjqUPpfuEXx8uUuecGTJKGyNRok-U5zvWG5QrpxG-OUJzLQ/exec" autocomplete="off">
         </label>
 
         <div class="settings-grid">
           <div class="field">
             <span>학습자</span>
             <div class="learner-options" role="group" aria-label="학습자 선택">
-              <button id="learnerSuyeonBtn" class="learner-button active" type="button" data-learner="수연">수연</button>
-              <button id="learnerMingeunBtn" class="learner-button" type="button" data-learner="민근">민근</button>
+              <button id="learnerSuyeonBtn" class="learner-button active" type="button" data-learner="수연">Suyeon</button>
+              <button id="learnerMingeunBtn" class="learner-button" type="button" data-learner="민근">Mingeun</button>
             </div>
           </div>
 
@@ -442,17 +479,22 @@
             <span>랜덤</span>
             <input id="randomCheckbox" type="checkbox">
           </label>
+
+          <label class="field checkbox-field">
+            <span>Example</span>
+            <input id="exampleCheckbox" type="checkbox">
+          </label>
         </div>
 
         <div class="settings-actions">
-          <button id="saveSettingsBtn" class="secondary-button" type="button">설정 저장</button>
-          <button id="reloadBtn" class="secondary-button" type="button">단어 다시 불러오기</button>
+          <button id="saveSettingsBtn" class="secondary-button" type="button">Save</button>
+          <button id="reloadBtn" class="secondary-button" type="button">Reload</button>
         </div>
       </section>
 
       <section class="mode-switch" aria-label="학습 모드">
-        <button id="studyModeBtn" class="mode-button active" type="button" data-mode="study">전체 학습</button>
-        <button id="remindModeBtn" class="mode-button" type="button" data-mode="remind">리마인드</button>
+        <button id="studyModeBtn" class="mode-button active" type="button" data-mode="study">Study</button>
+        <button id="remindModeBtn" class="mode-button" type="button" data-mode="remind">Remind</button>
       </section>
 
       <section class="card-area" aria-live="polite">
@@ -468,6 +510,7 @@
           <div id="wordContent" class="word-content hidden">
             <div id="wordText" class="word-text"></div>
             <div id="meaningText" class="meaning-text"></div>
+            <div id="exampleText" class="example-text"></div>
           </div>
         </article>
 
@@ -475,14 +518,15 @@
       </section>
 
       <section class="primary-actions" aria-label="학습 조작">
-        <button id="prevBtn" type="button">이전</button>
-        <button id="startPauseBtn" class="primary-button" type="button">시작</button>
-        <button id="nextBtn" type="button">다음</button>
+        <button id="prevBtn" type="button">Prev</button>
+        <button id="startPauseBtn" class="primary-button" type="button">Start</button>
+        <button id="nextBtn" type="button">Next</button>
       </section>
 
       <section class="word-actions" aria-label="단어 작업">
-        <a id="naverDictLink" class="dict-button disabled" href="#" target="_blank" rel="noopener noreferrer">네이버사전</a>
-        <button id="markDoneBtn" class="done-button" type="button">암기완료</button>
+        <a id="naverDictLink" class="dict-button disabled" href="#" target="_blank" rel="noopener noreferrer">Dictionary</a>
+        <button id="markDoneBtn" class="done-button" type="button">Done</button>
+        <button id="excludeBtn" class="exclude-button" type="button">Exclude</button>
       </section>
     </main>
 
@@ -492,12 +536,14 @@
 
         var SETTINGS_KEY = "wordFlashSettings";
         var DONE_VALUE = "Y";
+        var EXCLUDED_VALUE = "X";
         var OLD_DEFAULT_API_URLS = [
           "https://script.google.com/macros/s/AKfycby-gwtgEfiBzf84HvSnHM_lzVPwAJdn8wujI0WVmeU9QO0Wjl5k1Zm9c6sMGhDSs0UZHw/exec",
           "https://script.google.com/macros/s/AKfycbxCvTHbjC5fblthDJuRaW-um8rJqg9oLvEUmndE7892zxEada_YEKvOs1NFld15i4w8nQ/exec",
-          "https://script.google.com/macros/s/AKfycbwM88J7xPTffNwMMvi9fxkZ5Et7_0IwhEsUx0JH9vCUXuDTYTg4Rr75I_CdO8FwMkZmow/exec"
+          "https://script.google.com/macros/s/AKfycbwM88J7xPTffNwMMvi9fxkZ5Et7_0IwhEsUx0JH9vCUXuDTYTg4Rr75I_CdO8FwMkZmow/exec",
+          "https://script.google.com/macros/s/AKfycbzybETnwmh_A6G0xIabCgaL6ltzElCXehJ7VGGGRicOFlBG7_n8srF5CSGne3ugG9ebgQ/exec"
         ];
-        var DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzybETnwmh_A6G0xIabCgaL6ltzElCXehJ7VGGGRicOFlBG7_n8srF5CSGne3ugG9ebgQ/exec";
+        var DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzbajqE12fk0gkrrhhdsT9MjqUPpfuEXx8uUuecGTJKGyNRok-U5zvWG5QrpxG-OUJzLQ/exec";
         var DEFAULT_LEARNER = "수연";
         var ALLOWED_LEARNERS = ["수연", "민근"];
 
@@ -507,7 +553,8 @@
             learner: DEFAULT_LEARNER,
             displayMode: "word",
             intervalSeconds: 3,
-            randomOrder: true
+            randomOrder: true,
+            showExample: true
           },
           allWords: [],
           visibleWords: [],
@@ -547,6 +594,7 @@
           els.displayModeSelect = document.getElementById("displayModeSelect");
           els.intervalInput = document.getElementById("intervalInput");
           els.randomCheckbox = document.getElementById("randomCheckbox");
+          els.exampleCheckbox = document.getElementById("exampleCheckbox");
           els.saveSettingsBtn = document.getElementById("saveSettingsBtn");
           els.reloadBtn = document.getElementById("reloadBtn");
           els.studyModeBtn = document.getElementById("studyModeBtn");
@@ -557,12 +605,15 @@
           els.wordContent = document.getElementById("wordContent");
           els.wordText = document.getElementById("wordText");
           els.meaningText = document.getElementById("meaningText");
+          els.exampleText = document.getElementById("exampleText");
           els.messageBox = document.getElementById("messageBox");
           els.naverDictLink = document.getElementById("naverDictLink");
+          els.wordActions = document.querySelector(".word-actions");
           els.prevBtn = document.getElementById("prevBtn");
           els.startPauseBtn = document.getElementById("startPauseBtn");
           els.nextBtn = document.getElementById("nextBtn");
           els.markDoneBtn = document.getElementById("markDoneBtn");
+          els.excludeBtn = document.getElementById("excludeBtn");
         }
 
         function bindEvents() {
@@ -601,6 +652,11 @@
             rebuildVisibleWords();
             render();
           });
+          els.exampleCheckbox.addEventListener("change", function () {
+            state.settings.showExample = els.exampleCheckbox.checked;
+            saveSettings();
+            render();
+          });
 
           els.studyModeBtn.addEventListener("click", function () {
             setMode("study");
@@ -612,7 +668,9 @@
           els.prevBtn.addEventListener("click", prevWord);
           els.nextBtn.addEventListener("click", nextWord);
           els.startPauseBtn.addEventListener("click", toggleRunning);
-          els.markDoneBtn.addEventListener("click", markCurrentDone);
+          els.markDoneBtn.addEventListener("click", toggleCurrentDone);
+          els.excludeBtn.addEventListener("click", excludeCurrentWord);
+          els.naverDictLink.addEventListener("click", openDictionaryWindow);
         }
 
         function loadSettings() {
@@ -623,9 +681,11 @@
             state.settings.displayMode = saved.displayMode === "wordMeaning" ? "wordMeaning" : "word";
             state.settings.intervalSeconds = normalizeInterval(saved.intervalSeconds || 3);
             state.settings.randomOrder = saved.randomOrder !== false;
+            state.settings.showExample = saved.showExample !== false;
           } catch (error) {
             state.settings.intervalSeconds = 3;
             state.settings.randomOrder = true;
+            state.settings.showExample = true;
           }
         }
 
@@ -635,6 +695,7 @@
           els.displayModeSelect.value = state.settings.displayMode;
           els.intervalInput.value = state.settings.intervalSeconds;
           els.randomCheckbox.checked = state.settings.randomOrder;
+          els.exampleCheckbox.checked = state.settings.showExample;
         }
 
         function saveSettingsFromForm() {
@@ -643,6 +704,7 @@
           state.settings.displayMode = els.displayModeSelect.value;
           state.settings.intervalSeconds = normalizeInterval(els.intervalInput.value);
           state.settings.randomOrder = els.randomCheckbox.checked;
+          state.settings.showExample = els.exampleCheckbox.checked;
           els.intervalInput.value = state.settings.intervalSeconds;
           saveSettings();
           setMessage("설정을 저장했습니다.", false);
@@ -698,6 +760,8 @@
           els.studyModeBtn.classList.toggle("active", state.mode === "study");
           els.remindModeBtn.classList.toggle("active", state.mode === "remind");
           els.modeLabel.textContent = state.mode === "study" ? "전체 학습" : "리마인드";
+          els.markDoneBtn.textContent = state.mode === "study" ? "Done" : "Restore";
+          els.wordActions.classList.toggle("remind-actions", state.mode === "remind");
         }
 
         function fetchWords() {
@@ -764,14 +828,16 @@
             row: Number(item.rowNumber || item.row || 0),
             word: String(item.word || "").trim(),
             meaning: String(item.meaning || "").trim(),
+            example: String(item.example || "").trim(),
             memorized: String(item.memorized || item.done || "").trim()
           };
         }
 
         function rebuildVisibleWords() {
           state.visibleWords = state.allWords.filter(function (item) {
-            var hasDoneValue = Boolean(item.memorized);
-            return state.mode === "study" ? !hasDoneValue : hasDoneValue;
+            var isExcluded = item.memorized === EXCLUDED_VALUE;
+            var hasDoneValue = Boolean(item.memorized) && !isExcluded;
+            return state.mode === "study" ? !hasDoneValue && !isExcluded : hasDoneValue;
           });
 
           if (state.settings.randomOrder) {
@@ -812,11 +878,13 @@
             els.wordContent.classList.remove("hidden");
             els.wordText.textContent = current.word;
             els.meaningText.textContent = current.meaning;
+            renderHighlightedExample(current);
             els.meaningText.classList.toggle("hidden", state.settings.displayMode !== "wordMeaning");
+            els.exampleText.classList.toggle("hidden", !state.settings.showExample || !current.example);
           }
 
           updateDictionaryLink(current);
-          els.startPauseBtn.textContent = state.isRunning ? "일시정지" : "시작";
+          els.startPauseBtn.textContent = state.isRunning ? "Pause" : "Start";
           updateDisabledState();
         }
 
@@ -829,6 +897,52 @@
 
           els.naverDictLink.href = "https://en.dict.naver.com/#/search?query=" + encodeURIComponent(current.word);
           els.naverDictLink.classList.remove("disabled");
+        }
+
+        function renderHighlightedExample(current) {
+          els.exampleText.textContent = "";
+          if (!current.example) return;
+
+          var word = current.word.trim();
+          if (!word) {
+            els.exampleText.textContent = current.example;
+            return;
+          }
+
+          var escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          var matcher = new RegExp(escapedWord, "gi");
+          var lastIndex = 0;
+          var match;
+
+          while ((match = matcher.exec(current.example)) !== null) {
+            if (match.index > lastIndex) {
+              els.exampleText.appendChild(document.createTextNode(current.example.slice(lastIndex, match.index)));
+            }
+
+            var highlight = document.createElement("span");
+            highlight.className = "example-highlight";
+            highlight.textContent = match[0];
+            els.exampleText.appendChild(highlight);
+            lastIndex = matcher.lastIndex;
+          }
+
+          if (lastIndex < current.example.length) {
+            els.exampleText.appendChild(document.createTextNode(current.example.slice(lastIndex)));
+          }
+        }
+
+        function openDictionaryWindow(event) {
+          if (els.naverDictLink.classList.contains("disabled")) {
+            event.preventDefault();
+            return;
+          }
+
+          event.preventDefault();
+          window.open(
+            els.naverDictLink.href,
+            "wordFlashDictionary",
+            "width=520,height=760,menubar=no,toolbar=no,location=yes,status=no,scrollbars=yes,resizable=yes"
+          );
         }
 
         function emptyText() {
@@ -846,6 +960,7 @@
           els.nextBtn.disabled = state.isLoading || !hasWords || state.isComplete;
           els.startPauseBtn.disabled = state.isLoading || !hasWords || state.isComplete;
           els.markDoneBtn.disabled = state.isLoading || !hasWords || state.isComplete;
+          els.excludeBtn.disabled = state.isLoading || !hasWords || state.isComplete;
           els.reloadBtn.disabled = state.isLoading;
         }
 
@@ -936,7 +1051,20 @@
           render();
         }
 
-        function markCurrentDone() {
+        function toggleCurrentDone() {
+          if (state.mode === "remind") {
+            updateCurrentWordStatus("", "Restore");
+            return;
+          }
+
+          updateCurrentWordStatus(DONE_VALUE, "Done");
+        }
+
+        function excludeCurrentWord() {
+          updateCurrentWordStatus(EXCLUDED_VALUE, "Exclude");
+        }
+
+        function updateCurrentWordStatus(nextStatus, actionLabel) {
           var current = state.visibleWords[state.currentIndex];
           if (!current || !current.row) {
             setMessage("갱신할 행 번호를 찾을 수 없습니다.", true);
@@ -944,7 +1072,8 @@
           }
 
           els.markDoneBtn.disabled = true;
-          setMessage("암기완료 처리 중입니다.", false);
+          els.excludeBtn.disabled = true;
+          setMessage(actionLabel + " is being saved.", false);
 
           fetch(state.settings.apiUrl, {
             method: "POST",
@@ -954,33 +1083,29 @@
             body: JSON.stringify({
               sheetName: state.settings.learner,
               rowNumber: current.row,
-              memorized: DONE_VALUE
+              memorized: nextStatus
             })
           })
             .then(parseJsonResponse)
             .catch(function () {
-              return requestJsonp(buildMarkDoneUrl(current.row));
+              return requestJsonp(buildMarkDoneUrl(current.row, nextStatus));
             })
             .then(function (data) {
               if (!data.success) {
-                throw new Error(data.error || "갱신에 실패했습니다.");
+                throw new Error(data.error || actionLabel + " failed.");
               }
 
-              current.memorized = data.memorized || DONE_VALUE;
+              current.memorized = data.memorized || "";
               updateAllWords(current);
-              if (state.mode === "study") {
-                state.visibleWords.splice(state.currentIndex, 1);
-                if (state.currentIndex >= state.visibleWords.length) {
-                  state.currentIndex = Math.max(state.visibleWords.length - 1, 0);
-                }
-              } else {
-                rebuildVisibleWords();
+              state.visibleWords.splice(state.currentIndex, 1);
+              if (state.currentIndex >= state.visibleWords.length) {
+                state.currentIndex = Math.max(state.visibleWords.length - 1, 0);
               }
-              setMessage("암기완료로 저장했습니다.", false);
+              setMessage(actionLabel + " saved.", false);
               render();
             })
             .catch(function (error) {
-              setMessage("암기완료 실패: " + error.message, true);
+              setMessage(actionLabel + " failed: " + error.message, true);
             })
             .finally(updateDisabledState);
         }
@@ -1004,12 +1129,12 @@
           return url.toString();
         }
 
-        function buildMarkDoneUrl(rowNumber) {
+        function buildMarkDoneUrl(rowNumber, memorized) {
           var url = new URL(state.settings.apiUrl, window.location.href);
           url.searchParams.set("sheetName", state.settings.learner);
           url.searchParams.set("action", "markDone");
           url.searchParams.set("rowNumber", rowNumber);
-          url.searchParams.set("memorized", DONE_VALUE);
+          url.searchParams.set("memorized", memorized);
           return url.toString();
         }
 
