@@ -1062,7 +1062,7 @@
           clearActiveTimer();
           if (!state.isRunning || state.isComplete) return;
 
-          state.timerId = window.setTimeout(advanceTimedStep, state.settings.intervalSeconds * 1000);
+          state.timerId = window.setTimeout(advanceTimedStep, currentPhaseDelay());
         }
 
         function advanceTimedStep() {
@@ -1080,6 +1080,15 @@
 
           nextWord();
           scheduleNextTick();
+        }
+
+        function currentPhaseDelay() {
+          var seconds = state.settings.intervalSeconds;
+          if (state.cardPhase === "example") {
+            seconds += 1;
+          }
+
+          return seconds * 1000;
         }
 
         function nextWord(resetTimer) {
