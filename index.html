@@ -258,7 +258,7 @@
       }
 
       .example-highlight {
-        color: var(--brand-dark);
+        color: var(--danger);
         font-weight: 850;
       }
 
@@ -909,14 +909,37 @@
             return;
           }
 
+          var example = splitMixedLanguageExample(current.example);
           var escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
           var matcher = new RegExp(escapedWord, "gi");
+          example.split("\n").forEach(function (line, lineIndex) {
+            if (lineIndex > 0) {
+              els.exampleText.appendChild(document.createElement("br"));
+            }
+
+            appendHighlightedText(line, matcher);
+          });
+        }
+
+        function splitMixedLanguageExample(example) {
+          var hasKorean = /[가-힣]/.test(example);
+          var hasEnglish = /[A-Za-z]/.test(example);
+          if (!hasKorean || !hasEnglish) return example;
+
+          return example
+            .replace(/([가-힣])\s*([A-Za-z])/g, "$1\n$2")
+            .replace(/([A-Za-z])\s*([가-힣])/g, "$1\n$2")
+            .replace(/\n+/g, "\n");
+        }
+
+        function appendHighlightedText(text, matcher) {
+          matcher.lastIndex = 0;
           var lastIndex = 0;
           var match;
 
-          while ((match = matcher.exec(current.example)) !== null) {
+          while ((match = matcher.exec(text)) !== null) {
             if (match.index > lastIndex) {
-              els.exampleText.appendChild(document.createTextNode(current.example.slice(lastIndex, match.index)));
+              els.exampleText.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
             }
 
             var highlight = document.createElement("span");
@@ -926,8 +949,8 @@
             lastIndex = matcher.lastIndex;
           }
 
-          if (lastIndex < current.example.length) {
-            els.exampleText.appendChild(document.createTextNode(current.example.slice(lastIndex)));
+          if (lastIndex < text.length) {
+            els.exampleText.appendChild(document.createTextNode(text.slice(lastIndex)));
           }
         }
 
