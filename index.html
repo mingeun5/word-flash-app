@@ -8,6 +8,9 @@
       :root {
         --bg: #f5f7fb;
         --panel: #ffffff;
+        --panel-soft: #fbfcff;
+        --control: #eef3f7;
+        --switch-bg: #e9eef5;
         --text: #172033;
         --muted: #687386;
         --line: #dde3ee;
@@ -16,6 +19,22 @@
         --accent: #d95f39;
         --danger: #b42318;
         --shadow: 0 16px 36px rgba(23, 32, 51, 0.12);
+      }
+
+      body.dark-mode {
+        --bg: #101820;
+        --panel: #182331;
+        --panel-soft: #1f2c3a;
+        --control: #243445;
+        --switch-bg: #223141;
+        --text: #f2f6fb;
+        --muted: #a9b5c4;
+        --line: #344557;
+        --brand: #3da4c5;
+        --brand-dark: #7fc9df;
+        --accent: #f08a66;
+        --danger: #ff7a70;
+        --shadow: 0 16px 36px rgba(0, 0, 0, 0.34);
       }
 
       * {
@@ -116,7 +135,7 @@
         border: 1px solid var(--line);
         border-radius: 8px;
         padding: 0 12px;
-        background: #fbfcff;
+        background: var(--panel-soft);
         color: var(--text);
         outline: none;
       }
@@ -140,9 +159,26 @@
 
       .settings-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr 110px 72px 82px;
+        grid-template-columns: 1fr 1fr 110px;
         gap: 10px;
       }
+
+      .checkbox-field {
+        grid-row: 2;
+      }
+
+      .checkbox-field:nth-of-type(3) {
+        grid-column: 1;
+      }
+
+      .checkbox-field:nth-of-type(4) {
+        grid-column: 2;
+      }
+
+      .checkbox-field:nth-of-type(5) {
+        grid-column: 3;
+      }
+
 
       .settings-actions,
       .primary-actions,
@@ -161,7 +197,7 @@
 
       .learner-button {
         min-height: 44px;
-        background: #eef3f7;
+        background: var(--control);
       }
 
       .learner-button.active {
@@ -175,14 +211,14 @@
       }
 
       .secondary-button {
-        background: #eef3f7;
+        background: var(--control);
       }
 
       .mode-switch {
         padding: 3px;
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: #e9eef5;
+        background: var(--switch-bg);
       }
 
       .mode-button {
@@ -214,6 +250,7 @@
       }
 
       .word-card {
+        position: relative;
         flex: 1;
         min-height: 250px;
         border: 1px solid var(--line);
@@ -225,6 +262,18 @@
         justify-content: center;
         padding: 20px 16px;
         text-align: center;
+      }
+
+      .meaning-button {
+        position: absolute;
+        bottom: 5px;
+        right: 12px;
+        min-height: 36px;
+        padding: 0 12px;
+        border-color: var(--brand);
+        background: var(--control);
+        color: var(--brand-dark);
+        font-size: 14px;
       }
 
       .word-content {
@@ -253,6 +302,7 @@
       .meaning-text {
         margin-top: 22px;
         overflow-wrap: anywhere;
+        white-space: pre-line;
         color: var(--muted);
         font-size: clamp(22px, 6vw, 34px);
         line-height: 1.25;
@@ -262,6 +312,7 @@
       .example-text {
         margin-top: 16px;
         overflow-wrap: anywhere;
+        white-space: pre-line;
         color: var(--text);
         font-size: clamp(16px, 4.5vw, 22px);
         line-height: 1.35;
@@ -373,6 +424,47 @@
         opacity: 0.5;
       }
 
+      .meaning-dialog {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(23, 32, 51, 0.42);
+      }
+
+      .meaning-dialog.hidden {
+        display: none;
+      }
+
+      .meaning-dialog-panel {
+        width: min(100%, 420px);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        padding: 22px;
+      }
+
+      .meaning-dialog-title {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .meaning-dialog-text {
+        margin: 0;
+        color: var(--text);
+        font-size: clamp(20px, 6vw, 30px);
+        line-height: 1.25;
+        font-weight: 850;
+        overflow-wrap: anywhere;
+        white-space: pre-line;
+      }
+
       @media (max-width: 380px) {
         .app-shell {
           padding-left: 12px;
@@ -381,6 +473,11 @@
 
         .settings-grid {
           grid-template-columns: 1fr;
+        }
+
+        .checkbox-field {
+          grid-row: auto;
+          grid-column: auto;
         }
 
         .primary-actions {
@@ -423,6 +520,13 @@
         .word-card {
           min-height: 205px;
           padding: 16px 14px;
+        }
+
+        .meaning-button {
+          bottom: 5px;
+          right: 8px;
+          min-height: 32px;
+          font-size: 13px;
         }
 
         .word-text {
@@ -487,13 +591,18 @@
           </label>
 
           <label class="field checkbox-field">
-            <span>랜덤</span>
+            <span>Random</span>
             <input id="randomCheckbox" type="checkbox">
           </label>
 
           <label class="field checkbox-field">
             <span>Example</span>
             <input id="exampleCheckbox" type="checkbox">
+          </label>
+
+          <label class="field checkbox-field">
+            <span>Dark</span>
+            <input id="darkModeCheckbox" type="checkbox">
           </label>
         </div>
 
@@ -515,6 +624,7 @@
         </div>
 
         <article class="word-card">
+          <button id="meaningBtn" class="meaning-button hidden" type="button">Meaning</button>
           <div id="emptyState" class="empty-state">
             단어 목록을 불러오면 학습을 시작할 수 있습니다.
           </div>
@@ -541,6 +651,13 @@
       </section>
     </main>
 
+    <div id="meaningDialog" class="meaning-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="meaningDialogTitle">
+      <div class="meaning-dialog-panel">
+        <p id="meaningDialogTitle" class="meaning-dialog-title">Meaning</p>
+        <p id="meaningDialogText" class="meaning-dialog-text"></p>
+      </div>
+    </div>
+
     <script>
       (function () {
         "use strict";
@@ -565,7 +682,8 @@
             displayMode: "word",
             intervalSeconds: 3,
             randomOrder: true,
-            showExample: true
+            showExample: true,
+            darkMode: false
           },
           allWords: [],
           visibleWords: [],
@@ -575,6 +693,7 @@
           timerId: null,
           restartTimerId: null,
           resumeAfterComplete: false,
+          resumeAfterMeaning: false,
           isComplete: false,
           isRunning: false,
           isLoading: false
@@ -607,6 +726,7 @@
           els.intervalInput = document.getElementById("intervalInput");
           els.randomCheckbox = document.getElementById("randomCheckbox");
           els.exampleCheckbox = document.getElementById("exampleCheckbox");
+          els.darkModeCheckbox = document.getElementById("darkModeCheckbox");
           els.saveSettingsBtn = document.getElementById("saveSettingsBtn");
           els.reloadBtn = document.getElementById("reloadBtn");
           els.studyModeBtn = document.getElementById("studyModeBtn");
@@ -618,6 +738,9 @@
           els.wordText = document.getElementById("wordText");
           els.meaningText = document.getElementById("meaningText");
           els.exampleText = document.getElementById("exampleText");
+          els.meaningBtn = document.getElementById("meaningBtn");
+          els.meaningDialog = document.getElementById("meaningDialog");
+          els.meaningDialogText = document.getElementById("meaningDialogText");
           els.messageBox = document.getElementById("messageBox");
           els.naverDictLink = document.getElementById("naverDictLink");
           els.wordActions = document.querySelector(".word-actions");
@@ -672,6 +795,11 @@
             restartTimerIfRunning();
             render();
           });
+          els.darkModeCheckbox.addEventListener("change", function () {
+            state.settings.darkMode = els.darkModeCheckbox.checked;
+            saveSettings();
+            applyTheme();
+          });
 
           els.studyModeBtn.addEventListener("click", function () {
             setMode("study");
@@ -690,6 +818,12 @@
           els.markDoneBtn.addEventListener("click", toggleCurrentDone);
           els.excludeBtn.addEventListener("click", excludeCurrentWord);
           els.naverDictLink.addEventListener("click", openDictionaryWindow);
+          els.meaningBtn.addEventListener("click", showMeaningDialog);
+          els.meaningDialog.addEventListener("click", function (event) {
+            if (event.target === els.meaningDialog) {
+              hideMeaningDialog();
+            }
+          });
         }
 
         function loadSettings() {
@@ -701,10 +835,12 @@
             state.settings.intervalSeconds = normalizeInterval(saved.intervalSeconds || 3);
             state.settings.randomOrder = saved.randomOrder !== false;
             state.settings.showExample = saved.showExample !== false;
+            state.settings.darkMode = saved.darkMode === true;
           } catch (error) {
             state.settings.intervalSeconds = 3;
             state.settings.randomOrder = true;
             state.settings.showExample = true;
+            state.settings.darkMode = false;
           }
         }
 
@@ -715,6 +851,8 @@
           els.intervalInput.value = state.settings.intervalSeconds;
           els.randomCheckbox.checked = state.settings.randomOrder;
           els.exampleCheckbox.checked = state.settings.showExample;
+          els.darkModeCheckbox.checked = state.settings.darkMode;
+          applyTheme();
         }
 
         function saveSettingsFromForm() {
@@ -724,8 +862,10 @@
           state.settings.intervalSeconds = normalizeInterval(els.intervalInput.value);
           state.settings.randomOrder = els.randomCheckbox.checked;
           state.settings.showExample = els.exampleCheckbox.checked;
+          state.settings.darkMode = els.darkModeCheckbox.checked;
           els.intervalInput.value = state.settings.intervalSeconds;
           saveSettings();
+          applyTheme();
           setMessage("설정을 저장했습니다.", false);
 
           if (state.settings.apiUrl) {
@@ -737,6 +877,10 @@
 
         function saveSettings() {
           localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
+        }
+
+        function applyTheme() {
+          document.body.classList.toggle("dark-mode", state.settings.darkMode);
         }
 
         function normalizeInterval(value) {
@@ -891,10 +1035,12 @@
           if (state.isComplete) {
             els.emptyState.classList.remove("hidden");
             els.wordContent.classList.add("hidden");
+            els.meaningBtn.classList.add("hidden");
             els.emptyState.innerHTML = '<span class="complete-title">Done</span><span class="complete-subtitle">Restarts in 5 seconds.</span>';
           } else if (!current) {
             els.emptyState.classList.remove("hidden");
             els.wordContent.classList.add("hidden");
+            els.meaningBtn.classList.add("hidden");
             els.emptyState.textContent = emptyText();
           } else {
             var isExamplePhase = state.cardPhase === "example" && shouldShowExample(current);
@@ -907,6 +1053,7 @@
             els.wordText.classList.toggle("hidden", isExamplePhase);
             els.meaningText.classList.toggle("hidden", isExamplePhase || state.settings.displayMode !== "wordMeaning");
             els.exampleText.classList.toggle("hidden", !isExamplePhase);
+            els.meaningBtn.classList.toggle("hidden", !shouldShowMeaningButton(current, isExamplePhase));
           }
 
           updateDictionaryLink(current);
@@ -927,6 +1074,38 @@
 
         function shouldShowExample(current) {
           return Boolean(state.settings.showExample && current && current.example);
+        }
+
+        function shouldShowMeaningButton(current, isExamplePhase) {
+          return Boolean(
+            current &&
+            current.meaning &&
+            !isExamplePhase &&
+            state.settings.displayMode === "word" &&
+            !state.isComplete
+          );
+        }
+
+        function showMeaningDialog() {
+          var current = state.visibleWords[state.currentIndex];
+          if (!current || !current.meaning) return;
+
+          state.resumeAfterMeaning = state.isRunning;
+          pause();
+          els.meaningDialogText.textContent = current.meaning;
+          els.meaningDialog.classList.remove("hidden");
+          render();
+        }
+
+        function hideMeaningDialog() {
+          els.meaningDialog.classList.add("hidden");
+          if (state.resumeAfterMeaning) {
+            state.resumeAfterMeaning = false;
+            start();
+          } else {
+            state.resumeAfterMeaning = false;
+          }
+          render();
         }
 
         function renderHighlightedExample(current) {
