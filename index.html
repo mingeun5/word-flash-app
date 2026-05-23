@@ -231,6 +231,17 @@
         width: 100%;
       }
 
+      .word-content.example-phase .word-text,
+      .word-content.example-phase .meaning-text {
+        display: none;
+      }
+
+      .word-content.example-phase .example-text {
+        margin-top: 0;
+        font-size: clamp(24px, 7vw, 40px);
+        line-height: 1.3;
+      }
+
       .word-text {
         overflow-wrap: anywhere;
         font-size: clamp(42px, 15vw, 78px);
@@ -560,6 +571,7 @@
           visibleWords: [],
           mode: "study",
           currentIndex: 0,
+          cardPhase: "word",
           timerId: null,
           restartTimerId: null,
           resumeAfterComplete: false,
@@ -646,6 +658,7 @@
           els.randomCheckbox.addEventListener("change", function () {
             state.settings.randomOrder = els.randomCheckbox.checked;
             state.currentIndex = 0;
+            state.cardPhase = "word";
             state.isComplete = false;
             clearRestartTimer();
             saveSettings();
@@ -654,7 +667,9 @@
           });
           els.exampleCheckbox.addEventListener("change", function () {
             state.settings.showExample = els.exampleCheckbox.checked;
+            state.cardPhase = "word";
             saveSettings();
+            restartTimerIfRunning();
             render();
           });
 
@@ -665,8 +680,12 @@
             setMode("remind");
           });
 
-          els.prevBtn.addEventListener("click", prevWord);
-          els.nextBtn.addEventListener("click", nextWord);
+          els.prevBtn.addEventListener("click", function () {
+            prevWord(true);
+          });
+          els.nextBtn.addEventListener("click", function () {
+            nextWord(true);
+          });
           els.startPauseBtn.addEventListener("click", toggleRunning);
           els.markDoneBtn.addEventListener("click", toggleCurrentDone);
           els.excludeBtn.addEventListener("click", excludeCurrentWord);
@@ -751,6 +770,7 @@
           state.isComplete = false;
           state.mode = mode;
           state.currentIndex = 0;
+          state.cardPhase = "word";
           applyModeButtons();
           rebuildVisibleWords();
           render();
@@ -775,6 +795,7 @@
           clearRestartTimer();
           state.isComplete = false;
           state.isLoading = true;
+          state.cardPhase = "word";
           updateDisabledState();
           setMessage(state.settings.learner + " 단어 목록을 불러오는 중입니다.", false);
           els.syncStatus.textContent = "동기화 중...";
@@ -803,6 +824,7 @@
                   return item.word;
               });
               state.currentIndex = 0;
+              state.cardPhase = "word";
               rebuildVisibleWords();
               state.isComplete = false;
               setMessage("", false);
@@ -812,6 +834,7 @@
               state.allWords = [];
               state.visibleWords = [];
               state.currentIndex = 0;
+              state.cardPhase = "word";
               state.isComplete = false;
               setMessage("단어 목록 조회 실패: " + error.message, true);
               els.syncStatus.textContent = "동기화 실패";
@@ -874,13 +897,16 @@
             els.wordContent.classList.add("hidden");
             els.emptyState.textContent = emptyText();
           } else {
+            var isExamplePhase = state.cardPhase === "example" && shouldShowExample(current);
             els.emptyState.classList.add("hidden");
             els.wordContent.classList.remove("hidden");
+            els.wordContent.classList.toggle("example-phase", isExamplePhase);
             els.wordText.textContent = current.word;
             els.meaningText.textContent = current.meaning;
             renderHighlightedExample(current);
-            els.meaningText.classList.toggle("hidden", state.settings.displayMode !== "wordMeaning");
-            els.exampleText.classList.toggle("hidden", !state.settings.showExample || !current.example);
+            els.wordText.classList.toggle("hidden", isExamplePhase);
+            els.meaningText.classList.toggle("hidden", isExamplePhase || state.settings.displayMode !== "wordMeaning");
+            els.exampleText.classList.toggle("hidden", !isExamplePhase);
           }
 
           updateDictionaryLink(current);
@@ -897,6 +923,10 @@
 
           els.naverDictLink.href = "https://en.dict.naver.com/#/search?query=" + encodeURIComponent(current.word);
           els.naverDictLink.classList.remove("disabled");
+        }
+
+        function shouldShowExample(current) {
+          return Boolean(state.settings.showExample && current && current.example);
         }
 
         function renderHighlightedExample(current) {
@@ -998,15 +1028,19 @@
 
         function start() {
           if (!state.visibleWords.length || state.isComplete) return;
-          pause();
+          clearActiveTimer();
           state.isRunning = true;
-          state.timerId = window.setInterval(nextWord, state.settings.intervalSeconds * 1000);
+          scheduleNextTick();
         }
 
         function pause() {
           state.isRunning = false;
+          clearActiveTimer();
+        }
+
+        function clearActiveTimer() {
           if (state.timerId) {
-            window.clearInterval(state.timerId);
+            window.clearTimeout(state.timerId);
             state.timerId = null;
           }
         }
@@ -1022,11 +1056,35 @@
         function restartTimerIfRunning() {
           if (!state.isRunning) return;
           start();
-          render();
         }
 
-        function nextWord() {
+        function scheduleNextTick() {
+          clearActiveTimer();
+          if (!state.isRunning || state.isComplete) return;
+
+          state.timerId = window.setTimeout(advanceTimedStep, state.settings.intervalSeconds * 1000);
+        }
+
+        function advanceTimedStep() {
+          var current = state.visibleWords[state.currentIndex];
+          state.timerId = null;
+
+          if (!state.isRunning || !current || state.isComplete) return;
+
+          if (state.cardPhase === "word" && shouldShowExample(current)) {
+            state.cardPhase = "example";
+            render();
+            scheduleNextTick();
+            return;
+          }
+
+          nextWord();
+          scheduleNextTick();
+        }
+
+        function nextWord(resetTimer) {
           if (!state.visibleWords.length || state.isComplete) return;
+          state.cardPhase = "word";
           if (state.settings.randomOrder && state.currentIndex >= state.visibleWords.length - 1) {
             completeRound();
             return;
@@ -1036,13 +1094,20 @@
             ? state.currentIndex + 1
             : (state.currentIndex + 1) % state.visibleWords.length;
           render();
+          if (resetTimer === true) {
+            restartTimerIfRunning();
+          }
         }
 
-        function prevWord() {
+        function prevWord(resetTimer) {
           if (!state.visibleWords.length || state.isComplete) return;
+          state.cardPhase = "word";
           state.currentIndex =
             (state.currentIndex - 1 + state.visibleWords.length) % state.visibleWords.length;
           render();
+          if (resetTimer === true) {
+            restartTimerIfRunning();
+          }
         }
 
         function completeRound() {
@@ -1062,6 +1127,7 @@
         function restartRound() {
           state.isComplete = false;
           state.currentIndex = 0;
+          state.cardPhase = "word";
           rebuildVisibleWords();
 
           if (state.resumeAfterComplete && state.visibleWords.length) {
@@ -1120,6 +1186,7 @@
 
               current.memorized = data.memorized || "";
               updateAllWords(current);
+              state.cardPhase = "word";
               state.visibleWords.splice(state.currentIndex, 1);
               if (state.currentIndex >= state.visibleWords.length) {
                 state.currentIndex = Math.max(state.visibleWords.length - 1, 0);
